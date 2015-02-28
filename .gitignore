@@ -29,3 +29,8 @@ manifest.mf
 nicknames.txt
 trainerclasses.txt
 trainernames.txt
+*.iml
+.idea
+*.gradle
+gradle*
+build
