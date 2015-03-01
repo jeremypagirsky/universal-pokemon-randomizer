@@ -747,77 +747,11 @@ public class Randomizer {
     return checkValue;
   }
 
-  private static String getValidRequiredROMName(
-      String config, byte[] trainerClasses, byte[] trainerNames, byte[] nicknames)
-      throws UnsupportedEncodingException, InvalidSupplementFilesException {
-    byte[] data = DatatypeConverter.parseBase64Binary(config);
-
-    if (data.length < 45) {
-      throw new UnsupportedEncodingException("Config is too short to be valid.");
-    }
-
-    // Check the checksum
-    ByteBuffer buf = ByteBuffer.allocate(4).put(data, data.length - 16, 4);
-    buf.rewind();
-    int crc = buf.getInt();
-
-    CRC32 checksum = new CRC32();
-    checksum.update(data, 0, data.length - 16);
-    if ((int) checksum.getValue() != crc) {
-      throw new UnsupportedEncodingException("Checksum failure.");
-    }
-
-    // Check the trainerclass & trainernames crc
-    if (trainerClasses == null
-        && !FileFunctions.checkOtherCRC(data, 0, 6, "trainerclasses.txt",
-        data.length - 12)) {
-      throw new InvalidSupplementFilesException(Type.NICKNAMES,
-          "Can't use this preset because you have a different set "
-              + "of random trainer class names to the creator.");
-    }
-    if (trainerNames == null
-        && (!FileFunctions.checkOtherCRC(data, 0, 5, "trainernames.txt",
-        data.length - 8) || !FileFunctions.checkOtherCRC(data, 16, 5,
-        "trainernames.txt", data.length - 8))) {
-      throw new InvalidSupplementFilesException(Type.NICKNAMES,
-          "Can't use this preset because you have a different set "
-              + "of random trainer names to the creator.");
-    }
-    if (nicknames == null
-        && !FileFunctions.checkOtherCRC(data, 16, 4, "nicknames.txt", data.length - 4)) {
-      throw new InvalidSupplementFilesException(Type.NICKNAMES,
-          "Can't use this preset because you have a different set "
-          + "of random nicknames to the creator.");
-    }
-
-    int nameLength = data[28] & 0xFF;
-    if (data.length != 45 + nameLength) {
-      return null; // not valid length
-    }
-    return new String(data, 29, nameLength, "US-ASCII");
-  }
-
   private static int addToCV(int checkValue, int... values) {
     for (int value : values) {
       checkValue = Integer.rotateLeft(checkValue, 3);
       checkValue ^= value;
     }
     return checkValue;
-  }
-
-  private static void testForRequiredConfigs() throws FileNotFoundException {
-    String[] required = new String[] { "gameboy_jap.tbl",
-        "rby_english.tbl", "rby_freger.tbl", "rby_espita.tbl",
-        "green_translation.tbl", "gsc_english.tbl", "gsc_freger.tbl",
-        "gsc_espita.tbl", "gba_english.tbl", "gba_jap.tbl",
-        "Generation4.tbl", "Generation5.tbl", "gen1_offsets.ini",
-        "gen2_offsets.ini", "gen3_offsets.ini", "gen4_offsets.ini",
-        "gen5_offsets.ini", "trainerclasses.txt", "trainernames.txt",
-        "nicknames.txt" };
-    for (String filename : required) {
-      if (!FileFunctions.configExists(filename)) {
-        throw new FileNotFoundException(filename);
-      }
-    }
   }
 }

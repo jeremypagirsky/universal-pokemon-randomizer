@@ -35,6 +35,7 @@ public class InvalidSupplementFilesException extends Exception {
 
   enum Type {
     UNKNOWN,
+    TOO_SHORT,
     TRAINER_CLASSES,
     TRAINER_NAMES,
     NICKNAMES

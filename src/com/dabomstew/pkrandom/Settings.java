@@ -28,7 +28,7 @@ public class Settings {
 
   public static final int VERSION = 163;
 
-  private static final Map<String, RomHandler.Factory> ROM_HANDLER_FACTORIES;
+  public static final Map<String, RomHandler.Factory> ROM_HANDLER_FACTORIES;
   static {
     Map<String, RomHandler.Factory> map = new HashMap<>();
 
@@ -426,9 +426,9 @@ public class Settings {
     }
 
     // Read the ROM handler name in order to restore the handler
-    // TODO(kjs) getValidRequiredROMName?
     Settings settings = new Settings();
-    int romNameLength = FileFunctions.readFullInt(data, 25); // TODO(kjs) confirm not check 28
+    int romNameLength = FileFunctions.readFullInt(data, 25);
+    // int romNameLength = data[28] & 0xFF;
     String romName = new String(data, 29, romNameLength, "US-ASCII");
     settings.setRomHandlerFactory(ROM_HANDLER_FACTORIES.get(romName));
 
