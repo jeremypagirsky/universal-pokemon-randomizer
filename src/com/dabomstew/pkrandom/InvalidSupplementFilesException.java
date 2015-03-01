@@ -1,15 +1,15 @@
-package com.dabomstew.pkrandom.gui;
+package com.dabomstew.pkrandom;
 
 /*----------------------------------------------------------------------------*/
 /*--  InvalidSupplementFilesException.java - thrown when the trainer class	--*/
-/*--  			     	                     or trainer name files found are--*/
-/*--					                     different from those of the	--*/
-/*--                                         preset creator.           		--*/
-/*--  																		--*/
-/*--  Part of "Universal Pokemon Randomizer" by Dabomstew					--*/
-/*--  Pokemon and any associated names and the like are						--*/
-/*--  trademark and (C) Nintendo 1996-2012.									--*/
-/*--  																		--*/
+/*--  			     	                     or trainer name files found are      --*/
+/*--					                         different from those of the	        --*/
+/*--                                         preset creator.           		  --*/
+/*--  																		                                  --*/
+/*--  Part of "Universal Pokemon Randomizer" by Dabomstew					          --*/
+/*--  Pokemon and any associated names and the like are						          --*/
+/*--  trademark and (C) Nintendo 1996-2012.									                --*/
+/*--  																		                                  --*/
 /*--  The custom code written here is licensed under the terms of the GPL:	--*/
 /*--                                                                        --*/
 /*--  This program is free software: you can redistribute it and/or modify  --*/
@@ -33,4 +33,26 @@ public class InvalidSupplementFilesException extends Exception {
 	 */
 	private static final long serialVersionUID = -3778498838677886358L;
 
+  enum Type {
+    UNKNOWN,
+    TRAINER_CLASSES,
+    TRAINER_NAMES,
+    NICKNAMES
+  }
+
+  private final Type type;
+
+  public InvalidSupplementFilesException() {
+    // legacy
+    this.type = Type.UNKNOWN;
+  }
+
+  public InvalidSupplementFilesException(Type type, String message) {
+    super(message);
+    this.type = type;
+  }
+
+  public Type getType() {
+    return type;
+  }
 }

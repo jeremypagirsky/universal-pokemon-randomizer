@@ -59,7 +59,9 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.dabomstew.pkrandom.CodeTweaks;
 import com.dabomstew.pkrandom.FileFunctions;
+import com.dabomstew.pkrandom.InvalidSupplementFilesException;
 import com.dabomstew.pkrandom.RandomSource;
+import com.dabomstew.pkrandom.Settings;
 import com.dabomstew.pkrandom.pokemon.Encounter;
 import com.dabomstew.pkrandom.pokemon.EncounterSet;
 import com.dabomstew.pkrandom.pokemon.GenRestrictions;
@@ -89,7 +91,7 @@ public class RandomizerGUI extends javax.swing.JFrame {
 	private static final long serialVersionUID = 637989089525556154L;
 	private RomHandler romHandler;
 	protected RomHandler[] checkHandlers;
-	public static final int PRESET_FILE_VERSION = 163;
+	public static final int PRESET_FILE_VERSION = Settings.VERSION;
 
 	public static final int UPDATE_VERSION = 1630;
 
@@ -153,23 +155,24 @@ public class RandomizerGUI extends javax.swing.JFrame {
 	 * @param autoupdate
 	 */
 	public RandomizerGUI(boolean autoupdate) {
+    try {
+      URL location = RandomizerGUI.class.getProtectionDomain()
+          .getCodeSource().getLocation();
+      File fh = new File(java.net.URLDecoder.decode(location.getFile(),
+          "UTF-8")).getParentFile();
+      rootPath = fh.getAbsolutePath() + File.separator;
+    } catch (Exception e) {
+      rootPath = "./";
+    }
 
-		try {
-			URL location = RandomizerGUI.class.getProtectionDomain()
-					.getCodeSource().getLocation();
-			File fh = new File(java.net.URLDecoder.decode(location.getFile(),
-					"UTF-8")).getParentFile();
-			rootPath = fh.getAbsolutePath() + File.separator;
-		} catch (Exception e) {
-			rootPath = "./";
-		}
+    bundle = java.util.ResourceBundle
+        .getBundle("com/dabomstew/pkrandom/gui/Bundle"); // NOI18N
 
-		bundle = java.util.ResourceBundle
-				.getBundle("com/dabomstew/pkrandom/gui/Bundle"); // NOI18N
 		testForRequiredConfigs();
 		reinitHandlers();
 		initComponents();
 		initialiseState();
+
 		autoUpdateEnabled = true;
 		haveCheckedCustomNames = false;
 		attemptReadConfig();
@@ -183,6 +186,7 @@ public class RandomizerGUI extends javax.swing.JFrame {
 					bundle.getString("RandomizerGUI.cantWriteConfigFile"));
 			autoUpdateEnabled = false;
 		}
+
 		setLocationRelativeTo(null);
 		setVisible(true);
 		checkCustomNames();
@@ -1279,7 +1283,7 @@ public class RandomizerGUI extends javax.swing.JFrame {
 	public String getValidRequiredROMName(String config, byte[] trainerClasses,
 			byte[] trainerNames, byte[] nicknames)
 			throws UnsupportedEncodingException,
-			InvalidSupplementFilesException {
+      InvalidSupplementFilesException {
 		byte[] data = DatatypeConverter.parseBase64Binary(config);
 
 		if (data.length < 45) {

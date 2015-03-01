@@ -56,6 +56,13 @@ import com.dabomstew.pkrandom.pokemon.Type;
 
 public class Gen2RomHandler extends AbstractGBRomHandler {
 
+  public static class Factory implements RomHandler.Factory {
+    @Override
+    public Gen2RomHandler create() {
+      return new Gen2RomHandler();
+    }
+  }
+
 	private static final Type[] typeTable = constructTypeTable();
 
 	private static Type[] constructTypeTable() {

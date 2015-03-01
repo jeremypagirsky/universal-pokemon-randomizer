@@ -14,15 +14,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.zip.CRC32;
 
 // TODO(kjs): split each section into own class?
@@ -30,26 +27,30 @@ public class Settings {
 
   public static final int VERSION = 163;
 
-  private static final Map<String, RomHandler> ROM_HANDLERS;
+  private static final Map<String, RomHandler.Factory> ROM_HANDLER_FACTORIES;
   static {
-    Map<String, RomHandler> map = new HashMap<>();
+    Map<String, RomHandler.Factory> map = new HashMap<>();
 
-    RomHandler gen1 = new Gen1RomHandler();
-    RomHandler gen2 = new Gen2RomHandler();
-    RomHandler gen3 = new Gen3RomHandler();
-    RomHandler gen4 = new Gen4RomHandler();
-    RomHandler gen5 = new Gen5RomHandler();
+    RomHandler.Factory gen1 = new Gen1RomHandler.Factory();
+    RomHandler.Factory gen2 = new Gen2RomHandler.Factory();
+    RomHandler.Factory gen3 = new Gen3RomHandler.Factory();
+    RomHandler.Factory gen4 = new Gen4RomHandler.Factory();
+    RomHandler.Factory gen5 = new Gen5RomHandler.Factory();
 
-    map.put(gen1.getROMName(), gen1);
-    map.put(gen2.getROMName(), gen2);
-    map.put(gen3.getROMName(), gen3);
-    map.put(gen4.getROMName(), gen4);
-    map.put(gen5.getROMName(), gen5);
+    map.put(gen1.create().getROMName(), gen1);
+    map.put(gen2.create().getROMName(), gen2);
+    map.put(gen3.create().getROMName(), gen3);
+    map.put(gen4.create().getROMName(), gen4);
+    map.put(gen5.create().getROMName(), gen5);
 
-    ROM_HANDLERS = Collections.unmodifiableMap(map);
+    ROM_HANDLER_FACTORIES = Collections.unmodifiableMap(map);
   }
 
-  private RomHandler romHandler;
+  private byte[] trainerClasses;
+  private byte[] trainerNames;
+  private byte[] nicknames;
+
+  private RomHandler.Factory romHandlerFactory;
   private GenRestrictions currentRestrictions;
   private int currentCodeTweaks;
 
@@ -63,7 +64,7 @@ public class Settings {
   private boolean raceMode;
   private boolean randomizeHiddenHollows;
   private boolean useCodeTweaks;
-  private boolean allowBrokenMoves;
+  private boolean allowBrokenMoves = true;
   private boolean limitPokemon;
 
   enum BaseStatisticsMod {
@@ -80,7 +81,7 @@ public class Settings {
     RANDOMIZE
   }
   private AbilitiesMod abilitiesMod = AbilitiesMod.UNCHANGED;
-  private boolean allowWonderGuard;
+  private boolean allowWonderGuard = true;
 
   enum StartersMod {
     UNCHANGED,
@@ -246,7 +247,7 @@ public class Settings {
         baseStatisticsMod == BaseStatisticsMod.UNCHANGED,
         abilitiesMod == AbilitiesMod.UNCHANGED,
         abilitiesMod == AbilitiesMod.RANDOMIZE,
-        allowWonderGuard,
+        !allowWonderGuard,
         standardizeEXPCurves));
 
     // 2: pokemon types & more general options
@@ -257,7 +258,7 @@ public class Settings {
         useCodeTweaks,
         raceMode,
         randomizeHiddenHollows,
-        allowBrokenMoves,
+        !allowBrokenMoves,
         limitPokemon));
 
     // v162: 3: new general options byte added (the rest were full)
@@ -294,8 +295,8 @@ public class Settings {
         trainersMod == TrainersMod.TYPE_THEMED,
         trainersMatchTypingDistribution,
         trainersMod == TrainersMod.UNCHANGED,
-        trainersCanUseLegendaries,
-        trainersEarlyWonderGuard));
+        !trainersCanUseLegendaries,
+        !trainersEarlyWonderGuard));
 
     // 13 wild pokemon
     out.write(makeByteSelected(
@@ -312,7 +313,7 @@ public class Settings {
     // bugfix 161
     out.write(makeByteSelected(
         useMinimumCatchRate,
-        encounterLegendaries,
+        !encounterLegendaries,
         wildPokemonRestrictionMod == WildPokemonRestrictionMod.SIMILAR_STRENGTH,
         randomizeWildPokemonHeldItems));
 
@@ -380,7 +381,7 @@ public class Settings {
     }
 
     try {
-      byte[] romName = romHandler.getROMName().getBytes("US-ASCII");
+      byte[] romName = romHandlerFactory.create().getROMName().getBytes("US-ASCII");
       out.write(romName.length);
       out.write(romName);
     } catch (UnsupportedEncodingException e) {
@@ -395,16 +396,16 @@ public class Settings {
 
     try {
       writeFullInt(out, (int) checksum.getValue());
-      writeFullInt(out, getFileChecksum("trainerclasses.txt"));
-      writeFullInt(out, getFileChecksum("trainernames.txt"));
-      writeFullInt(out, getFileChecksum("nicknames.txt"));
+      writeFullInt(out, FileFunctions.getFileChecksum("trainerclasses.txt"));
+      writeFullInt(out, FileFunctions.getFileChecksum("trainernames.txt"));
+      writeFullInt(out, FileFunctions.getFileChecksum("nicknames.txt"));
     } catch (IOException e) {
     }
 
     return DatatypeConverter.printBase64Binary(out.toByteArray());
   }
 
-  public static Settings fromString(String str) {
+  public static Settings fromString(String str) throws UnsupportedEncodingException {
     // Need to add enables
     byte[] data = DatatypeConverter.parseBase64Binary(str);
 
@@ -421,12 +422,11 @@ public class Settings {
     }
 
     // Read the ROM handler name in order to restore the handler
+    // TODO(kjs) getValidRequiredROMName?
     Settings settings = new Settings();
-    int romNameLength = readFullInt(data, 25);
-    buf = ByteBuffer.allocate(romNameLength).put(data, 29, romNameLength);
-    buf.rewind();
-    String romName = new String(buf.array(), Charset.forName("US-ASCII"));
-    settings.setRomHandler(ROM_HANDLERS.get(romName));
+    int romNameLength = FileFunctions.readFullInt(data, 25); // TODO(kjs) confirm not check 28
+    String romName = new String(data, 29, romNameLength, "US-ASCII");
+    settings.setRomHandlerFactory(ROM_HANDLER_FACTORIES.get(romName));
 
     // Restore the actual controls
     settings.setLowerCasePokemonNames(restoreState(data[0], 0));
@@ -458,7 +458,7 @@ public class Settings {
             4, // UNCHANGED
             5  // RANDOMIZE
         ));
-    settings.setAllowWonderGuard(restoreState(data[1], 6));
+    settings.setAllowWonderGuard(!restoreState(data[1], 6));
     settings.setStandardizeEXPCurves(restoreState(data[1], 7));
 
     settings.setTypesMod(
@@ -469,8 +469,8 @@ public class Settings {
         ));
     settings.setUseCodeTweaks(restoreState(data[2], 3));
     settings.setRaceMode(restoreState(data[2], 4));
-    settings.setAllowBrokenMoves(restoreState(data[2], 5));
-    settings.setAllowBrokenMoves(restoreState(data[2], 6));
+    settings.setRandomizeHiddenHollows(restoreState(data[2], 5));
+    settings.setAllowBrokenMoves(!restoreState(data[2], 6));
     settings.setLimitPokemon(restoreState(data[2], 7));
 
     settings.setMakeEvolutionsEasier(restoreState(data[3], 0));
@@ -510,8 +510,8 @@ public class Settings {
     settings.setTrainersUsePokemonOfSimilarStrength(restoreState(data[12], 0));
     settings.setRivalCarriesStarterThroughout(restoreState(data[12], 2));
     settings.setTrainersMatchTypingDistribution(restoreState(data[12], 4));
-    settings.setTrainersCanUseLegendaries(restoreState(data[12], 6));
-    settings.setTrainersEarlyWonderGuard(restoreState(data[12], 7));
+    settings.setTrainersCanUseLegendaries(!restoreState(data[12], 6));
+    settings.setTrainersEarlyWonderGuard(!restoreState(data[12], 7));
 
     settings.setWildPokemonMod(
         restoreEnum(WildPokemonMod.class, data[13],
@@ -530,7 +530,7 @@ public class Settings {
     settings.setUseTimeBasedEncounters(restoreState(data[13], 7));
 
     settings.setUseMinimumCatchRate(restoreState(data[14], 0));
-    settings.setEncounterLegendaries(restoreState(data[14], 1));
+    settings.setEncounterLegendaries(!restoreState(data[14], 1));
     settings.setRandomizeWildPokemonHeldItems(restoreState(data[14], 3));
 
     settings.setStaticPokemonMod(
@@ -590,7 +590,7 @@ public class Settings {
         ));
 
     // gen restrictions
-    int genLimit = readFullInt(data, 20);
+    int genLimit = FileFunctions.readFullInt(data, 20);
     GenRestrictions restrictions = null;
     if (genLimit != 0) {
       restrictions = new GenRestrictions(genLimit);
@@ -599,7 +599,7 @@ public class Settings {
     }
     settings.setCurrentRestrictions(restrictions);
 
-    int codeTweaks = readFullInt(data, 24);
+    int codeTweaks = FileFunctions.readFullInt(data, 24);
     codeTweaks = codeTweaks & settings.getRomHandler().codeTweaksAvailable();
     // Sanity override
     if (codeTweaks == 0) {
@@ -612,8 +612,20 @@ public class Settings {
 
   //TODO(kjs): reorganize methods so setters follow getters
 
-  public RomHandler getRomHandler() {
-    return romHandler;
+  public byte[] getTrainerClasses() {
+    return trainerClasses;
+  }
+
+  public byte[] getTrainerNames() {
+    return trainerNames;
+  }
+
+  public byte[] getNicknames() {
+    return nicknames;
+  }
+
+  public RomHandler.Factory getRomHandlerFactory() {
+    return romHandlerFactory;
   }
 
   public GenRestrictions getCurrentRestrictions() {
@@ -828,8 +840,23 @@ public class Settings {
     return fieldItemsMod;
   }
 
-  public Settings setRomHandler(final RomHandler romHandler) {
-    this.romHandler = romHandler;
+  public Settings setTrainerClasses(final byte[] trainerClasses) {
+    this.trainerClasses = trainerClasses;
+    return this;
+  }
+
+  public Settings setTrainerNames(final byte[] trainerNames) {
+    this.trainerNames = trainerNames;
+    return this;
+  }
+
+  public Settings setNicknames(final byte[] nicknames) {
+    this.nicknames = nicknames;
+    return this;
+  }
+
+  public Settings setRomHandlerFactory(final RomHandler.Factory romHandlerFactory) {
+    this.romHandlerFactory = romHandlerFactory;
     return this;
   }
 
@@ -1098,6 +1125,10 @@ public class Settings {
     return this;
   }
 
+  private RomHandler getRomHandler() {
+    return romHandlerFactory.create();
+  }
+
   private static void writePokemonIndex(ByteArrayOutputStream out, Pokemon pokemon) {
     int index = pokemon.number - 1;
     out.write(index & 0xFF);
@@ -1136,41 +1167,10 @@ public class Settings {
     return ((value >> index) & 0x01) == 0x01;
   }
 
-  private static int readFullInt(byte[] data, int offset) {
-    ByteBuffer buf = ByteBuffer.allocate(4).put(data, offset, 4);
-    buf.rewind();
-    return buf.getInt();
-  }
-
   private static void writeFullInt(ByteArrayOutputStream out, int checksum)
       throws IOException {
     byte[] crc = ByteBuffer.allocate(4).putInt(checksum).array();
     out.write(crc);
-  }
-
-  private static int getFileChecksum(String filename) {
-    try {
-      return getFileChecksum(FileFunctions.openConfig(filename));
-    } catch (IOException e) {
-      return 0;
-    }
-  }
-
-  private static int getFileChecksum(InputStream stream) {
-    try {
-      Scanner sc = new Scanner(stream, "UTF-8");
-      CRC32 checksum = new CRC32();
-      while (sc.hasNextLine()) {
-        String line = sc.nextLine().trim();
-        if (!line.isEmpty()) {
-          checksum.update(line.getBytes("UTF-8"));
-        }
-      }
-      sc.close();
-      return (int) checksum.getValue();
-    } catch (IOException e) {
-      return 0;
-    }
   }
 
   public static <E extends Enum<E>> E restoreEnum(Class<E> clazz, byte b, int... indices) {

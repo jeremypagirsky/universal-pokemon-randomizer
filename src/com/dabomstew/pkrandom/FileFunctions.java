@@ -8,8 +8,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
+import java.util.zip.CRC32;
 
 public class FileFunctions {
 
@@ -72,6 +75,57 @@ public class FileFunctions {
 				.getResourceAsStream("/com/dabomstew/pkrandom/config/"
 						+ filename);
 	}
+
+  public static int readFullInt(byte[] data, int offset) {
+    ByteBuffer buf = ByteBuffer.allocate(4).put(data, offset, 4);
+    buf.rewind();
+    return buf.getInt();
+  }
+
+  public static int getFileChecksum(String filename) {
+    try {
+      return getFileChecksum(openConfig(filename));
+    } catch (IOException e) {
+      return 0;
+    }
+  }
+
+  public static int getFileChecksum(InputStream stream) {
+    try {
+      Scanner sc = new Scanner(stream, "UTF-8");
+      CRC32 checksum = new CRC32();
+      while (sc.hasNextLine()) {
+        String line = sc.nextLine().trim();
+        if (!line.isEmpty()) {
+          checksum.update(line.getBytes("UTF-8"));
+        }
+      }
+      sc.close();
+      return (int) checksum.getValue();
+    } catch (IOException e) {
+      return 0;
+    }
+  }
+
+  public static boolean checkOtherCRC(byte[] data, int byteIndex, int switchIndex,
+                                String filename, int offsetInData) {
+    // If the switch at data[byteIndex].switchIndex is on,
+    // then check that the CRC at
+    // data[offsetInData] ... data[offsetInData+3]
+    // matches the CRC of filename.
+    // If not, return false.
+    // If any other case, return true.
+    int switches = data[byteIndex] & 0xFF;
+    if (((switches >> switchIndex) & 0x01) == 0x01) {
+      // have to check the CRC
+      int crc = readFullInt(data, offsetInData);
+
+      if (getFileChecksum(filename) != crc) {
+        return false;
+      }
+    }
+    return true;
+  }
 
 	public static byte[] getCodeTweakFile(String filename) throws IOException {
 		InputStream is = FileFunctions.class

@@ -55,6 +55,13 @@ import com.dabomstew.pkrandom.pokemon.Type;
 
 public class Gen1RomHandler extends AbstractGBRomHandler {
 
+  public static class Factory implements RomHandler.Factory {
+    @Override
+    public Gen1RomHandler create() {
+      return new Gen1RomHandler();
+    }
+  }
+
 	// Important RBY Data Structures
 
 	private int[] pokeNumToRBYTable;

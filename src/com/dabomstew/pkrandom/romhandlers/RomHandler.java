@@ -40,6 +40,10 @@ import com.dabomstew.pkrandom.pokemon.Type;
 
 public interface RomHandler {
 
+  public interface Factory {
+    public RomHandler create();
+  }
+
 	// Check whether this ROM is for this handler or not
 
 	public boolean detectRom(String filename);

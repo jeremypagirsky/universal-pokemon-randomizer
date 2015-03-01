@@ -60,6 +60,13 @@ import dsdecmp.JavaDSDecmp;
 
 public class Gen5RomHandler extends AbstractDSRomHandler {
 
+  public static class Factory implements RomHandler.Factory {
+    @Override
+    public Gen5RomHandler create() {
+      return new Gen5RomHandler();
+    }
+  }
+
 	// Statics
 	private static final Type[] typeTable = constructTypeTable();
 

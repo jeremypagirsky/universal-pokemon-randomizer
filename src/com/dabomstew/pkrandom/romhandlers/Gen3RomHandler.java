@@ -55,6 +55,13 @@ import com.dabomstew.pkrandom.pokemon.Type;
 
 public class Gen3RomHandler extends AbstractGBRomHandler {
 
+  public static class Factory implements RomHandler.Factory {
+    @Override
+    public Gen3RomHandler create() {
+      return new Gen3RomHandler();
+    }
+  }
+
 	private static final int[] hoennToNum = new int[] { 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
