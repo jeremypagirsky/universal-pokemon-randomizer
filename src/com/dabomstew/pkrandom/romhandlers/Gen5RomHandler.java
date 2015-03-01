@@ -33,13 +33,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
 
 import pptxt.PPTxtHandler;
 
 import com.dabomstew.pkrandom.FileFunctions;
-import com.dabomstew.pkrandom.RandomSource;
 import com.dabomstew.pkrandom.RomFunctions;
 import com.dabomstew.pkrandom.pokemon.Encounter;
 import com.dabomstew.pkrandom.pokemon.EncounterSet;
@@ -62,8 +62,8 @@ public class Gen5RomHandler extends AbstractDSRomHandler {
 
   public static class Factory implements RomHandler.Factory {
     @Override
-    public Gen5RomHandler create() {
-      return new Gen5RomHandler();
+    public Gen5RomHandler create(Random random) {
+      return new Gen5RomHandler(random);
     }
   }
 
@@ -354,6 +354,10 @@ public class Gen5RomHandler extends AbstractDSRomHandler {
 
 	private NARCContents pokeNarc, moveNarc, stringsNarc, storyTextNarc,
 			scriptNarc;
+
+  public Gen5RomHandler(Random random) {
+    super(random);
+  }
 
 	@Override
 	protected boolean detectNDSRom(String ndsCode) {
@@ -780,7 +784,7 @@ public class Gen5RomHandler extends AbstractDSRomHandler {
 	@Override
 	public void shufflePokemonStats() {
 		for (int i = 1; i <= 649; i++) {
-			pokes[i].shuffleStats();
+			pokes[i].shuffleStats(random);
 		}
 
 	}
@@ -1745,13 +1749,13 @@ public class Gen5RomHandler extends AbstractDSRomHandler {
 				for (int version = 0; version < 2; version++) {
 					for (int rarityslot = 0; rarityslot < 3; rarityslot++) {
 						for (int group = 0; group < 4; group++) {
-							int pokeChoice = RandomSource.nextInt(randomSize) + 1;
+							int pokeChoice = random.nextInt(randomSize) + 1;
 							if (pokeChoice > 493) {
 								pokeChoice = allowedUnovaPokemon[pokeChoice - 494];
 							}
 							writeWord(hhEntry, version * 78 + rarityslot * 26
 									+ group * 2, pokeChoice);
-							int genderRatio = RandomSource.nextInt(101);
+							int genderRatio = random.nextInt(101);
 							hhEntry[version * 78 + rarityslot * 26 + 16 + group] = (byte) genderRatio;
 							hhEntry[version * 78 + rarityslot * 26 + 20 + group] = 0; // forme
 						}

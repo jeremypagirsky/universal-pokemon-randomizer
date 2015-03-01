@@ -28,11 +28,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 public abstract class AbstractGBRomHandler extends AbstractRomHandler {
 
 	protected byte[] rom;
 	private String loadedFN;
+
+  public AbstractGBRomHandler(Random random) {
+    super(random);
+  }
 
 	public boolean detectRom(String filename) {
 		if (new File(filename).length() > 32 * 1024 * 1024) {

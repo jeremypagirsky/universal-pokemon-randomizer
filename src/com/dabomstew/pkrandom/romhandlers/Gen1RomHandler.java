@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
 
@@ -57,8 +58,8 @@ public class Gen1RomHandler extends AbstractGBRomHandler {
 
   public static class Factory implements RomHandler.Factory {
     @Override
-    public Gen1RomHandler create() {
-      return new Gen1RomHandler();
+    public Gen1RomHandler create(Random random) {
+      return new Gen1RomHandler(random);
     }
   }
 
@@ -91,6 +92,10 @@ public class Gen1RomHandler extends AbstractGBRomHandler {
 		table[0x1A] = Type.DRAGON;
 		return table;
 	}
+
+  public Gen1RomHandler(Random random) {
+    super(random);
+  }
 
 	private Type idToType(int value) {
 		if (typeTable[value] != null) {
@@ -971,7 +976,7 @@ public class Gen1RomHandler extends AbstractGBRomHandler {
 	@Override
 	public void shufflePokemonStats() {
 		for (int i = 1; i <= pokedexCount; i++) {
-			pokes[i].shuffleStats();
+			pokes[i].shuffleStats(random);
 		}
 	}
 

@@ -49,14 +49,13 @@ public class Randomizer {
 
   public int randomize(final String filename, final OutputStream logStream) {
     long seed = RandomSource.pickSeed();
-    RandomSource.seed(seed);
     return randomize(filename, logStream, seed);
   }
 
   public int randomize(final String filename, final OutputStream logStream, long seed) {
     final long startTime = System.currentTimeMillis();
-
-    final RomHandler romHandler = settings.getRomHandlerFactory().create();
+    RandomSource.seed(seed);
+    final RomHandler romHandler = settings.getRomHandlerFactory().create(RandomSource.instance());
     final boolean raceMode = settings.isRaceMode();
 
     int checkValue = 0;

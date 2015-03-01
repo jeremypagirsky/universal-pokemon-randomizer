@@ -26,15 +26,15 @@ package com.dabomstew.pkrandom.pokemon;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
-import com.dabomstew.pkrandom.RandomSource;
 import com.dabomstew.pkrandom.RomFunctions;
 
 public enum Type {
 
 	NORMAL, FIGHTING, FLYING, GRASS, WATER, FIRE, ROCK, GROUND, PSYCHIC, BUG, DRAGON, ELECTRIC, GHOST, POISON, ICE, STEEL, DARK,
 	GAS(true), FAIRY(true), WOOD(true), ABNORMAL(true), WIND(true), SOUND(true), LIGHT(true);
-	
+
 	public boolean isHackOnly;
 	
 	private Type() {
@@ -49,8 +49,8 @@ public enum Type {
 			.unmodifiableList(Arrays.asList(values()));
 	private static final int SIZE = VALUES.size();
 
-	public static Type randomType() {
-		return VALUES.get(RandomSource.nextInt(SIZE));
+	public static Type randomType(Random random) {
+		return VALUES.get(random.nextInt(SIZE));
 	}
 
 	public String camelCase() {

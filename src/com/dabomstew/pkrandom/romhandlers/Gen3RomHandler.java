@@ -31,13 +31,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.dabomstew.pkrandom.FileFunctions;
-import com.dabomstew.pkrandom.RandomSource;
 import com.dabomstew.pkrandom.RomFunctions;
 import com.dabomstew.pkrandom.pokemon.Encounter;
 import com.dabomstew.pkrandom.pokemon.EncounterSet;
@@ -57,8 +57,8 @@ public class Gen3RomHandler extends AbstractGBRomHandler {
 
   public static class Factory implements RomHandler.Factory {
     @Override
-    public Gen3RomHandler create() {
-      return new Gen3RomHandler();
+    public Gen3RomHandler create(Random random) {
+      return new Gen3RomHandler(random);
     }
   }
 
@@ -453,6 +453,10 @@ public class Gen3RomHandler extends AbstractGBRomHandler {
 	private static final int RomType_Sapp = 1;
 	private static final int RomType_Em = 2;
 	private static final int RomType_FRLG = 3;
+
+  public Gen3RomHandler(Random random) {
+    super(random);
+  }
 
 	@Override
 	public boolean detectRom(byte[] rom) {
@@ -995,7 +999,7 @@ public class Gen3RomHandler extends AbstractGBRomHandler {
 	@Override
 	public void shufflePokemonStats() {
 		for (int i = 1; i <= 386; i++) {
-			pokes[i].shuffleStats();
+			pokes[i].shuffleStats(random);
 		}
 	}
 
@@ -2475,7 +2479,7 @@ public class Gen3RomHandler extends AbstractGBRomHandler {
 		// FRLG
 		if (romEntry.romType == RomType_FRLG) {
 			// intro sprites : first 251 only due to size
-			int introPokemon = RandomSource.nextInt(251) + 1;
+			int introPokemon = random.nextInt(251) + 1;
 			int frontSprites = readPointer(0x128);
 			int palettes = readPointer(0x130);
 
@@ -2488,7 +2492,7 @@ public class Gen3RomHandler extends AbstractGBRomHandler {
 		} else if (romEntry.romType == RomType_Ruby
 				|| romEntry.romType == RomType_Sapp) {
 			// intro sprites : hoenn pokes only
-			int introPokemon = pokeNumTo3GIndex(RandomSource.nextInt(135) + 252);
+			int introPokemon = pokeNumTo3GIndex(random.nextInt(135) + 252);
 			int frontSprites = romEntry.getValue("PokemonFrontSprites");
 			int palettes = romEntry.getValue("PokemonNormalPalettes");
 			int cryCommand = romEntry.getValue("IntroCryOffset");

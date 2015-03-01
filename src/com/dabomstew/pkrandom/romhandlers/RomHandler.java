@@ -26,6 +26,7 @@ package com.dabomstew.pkrandom.romhandlers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import com.dabomstew.pkrandom.pokemon.EncounterSet;
 import com.dabomstew.pkrandom.pokemon.Evolution;
@@ -41,7 +42,7 @@ import com.dabomstew.pkrandom.pokemon.Type;
 public interface RomHandler {
 
   public interface Factory {
-    public RomHandler create();
+    public RomHandler create(Random random);
   }
 
 	// Check whether this ROM is for this handler or not

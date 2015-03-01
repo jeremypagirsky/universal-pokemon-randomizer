@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
 
@@ -38,7 +39,6 @@ import thenewpoketext.PokeTextData;
 import thenewpoketext.TextToPoke;
 
 import com.dabomstew.pkrandom.FileFunctions;
-import com.dabomstew.pkrandom.RandomSource;
 import com.dabomstew.pkrandom.RomFunctions;
 import com.dabomstew.pkrandom.pokemon.Encounter;
 import com.dabomstew.pkrandom.pokemon.EncounterSet;
@@ -58,8 +58,8 @@ public class Gen4RomHandler extends AbstractDSRomHandler {
 
   public static class Factory implements RomHandler.Factory {
     @Override
-    public Gen4RomHandler create() {
-      return new Gen4RomHandler();
+    public Gen4RomHandler create(Random random) {
+      return new Gen4RomHandler(random);
     }
   }
 
@@ -330,6 +330,10 @@ public class Gen4RomHandler extends AbstractDSRomHandler {
 	private static final int Type_DP = 0;
 	private static final int Type_Plat = 1;
 	private static final int Type_HGSS = 2;
+
+  public Gen4RomHandler(Random random) {
+    super(random);
+  }
 
 	@Override
 	protected boolean detectNDSRom(String ndsCode) {
@@ -875,7 +879,7 @@ public class Gen4RomHandler extends AbstractDSRomHandler {
 	@Override
 	public void shufflePokemonStats() {
 		for (int i = 1; i <= 493; i++) {
-			pokes[i].shuffleStats();
+			pokes[i].shuffleStats(random);
 		}
 	}
 
@@ -1882,8 +1886,7 @@ public class Gen4RomHandler extends AbstractDSRomHandler {
 					writeLong(tradeNARC.files.get(tradeNum), 0,
 							thisTrade.number);
 					writeLong(tradeNARC.files.get(tradeNum), 0x1C,
-							possibleAbilities.get(RandomSource
-									.nextInt(possibleAbilities.size())));
+							possibleAbilities.get(random.nextInt(possibleAbilities.size())));
 				}
 				writeNARC(romEntry.getString("InGameTrades"), tradeNARC);
 			}
@@ -1892,7 +1895,7 @@ public class Gen4RomHandler extends AbstractDSRomHandler {
 				// Truncate the pokemon# to 1byte, unless it's 0
 				int pokenum = statics.next().number;
 				if (pokenum > 255) {
-					pokenum = RandomSource.nextInt(255) + 1;
+					pokenum = random.nextInt(255) + 1;
 				}
 				byte[] ovOverlay = readOverlay(romEntry
 						.getInt("MoveTutorMovesOvlNumber"));

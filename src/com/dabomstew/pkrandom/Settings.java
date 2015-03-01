@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.zip.CRC32;
 
 // TODO(kjs): split each section into own class?
@@ -36,12 +37,15 @@ public class Settings {
     RomHandler.Factory gen3 = new Gen3RomHandler.Factory();
     RomHandler.Factory gen4 = new Gen4RomHandler.Factory();
     RomHandler.Factory gen5 = new Gen5RomHandler.Factory();
+    // NB: We don't need to use RandomSource because calling
+    // getROMName() is not randomized.
+    Random r = new Random();
 
-    map.put(gen1.create().getROMName(), gen1);
-    map.put(gen2.create().getROMName(), gen2);
-    map.put(gen3.create().getROMName(), gen3);
-    map.put(gen4.create().getROMName(), gen4);
-    map.put(gen5.create().getROMName(), gen5);
+    map.put(gen1.create(r).getROMName(), gen1);
+    map.put(gen2.create(r).getROMName(), gen2);
+    map.put(gen3.create(r).getROMName(), gen3);
+    map.put(gen4.create(r).getROMName(), gen4);
+    map.put(gen5.create(r).getROMName(), gen5);
 
     ROM_HANDLER_FACTORIES = Collections.unmodifiableMap(map);
   }
@@ -381,7 +385,7 @@ public class Settings {
     }
 
     try {
-      byte[] romName = romHandlerFactory.create().getROMName().getBytes("US-ASCII");
+      byte[] romName = getRomHandler().getROMName().getBytes("US-ASCII");
       out.write(romName.length);
       out.write(romName);
     } catch (UnsupportedEncodingException e) {
@@ -440,7 +444,7 @@ public class Settings {
 
     // sanity override
     if (settings.isUpdateMovesLegacy()
-        && (settings.getRomHandler() instanceof Gen5RomHandler)) {
+        && (settings.getRomHandlerFactory() instanceof Gen5RomHandler.Factory)) {
       // they probably don't want moves updated actually
       settings.setUpdateMovesLegacy(false);
       settings.setUpdateMoves(false);
@@ -1126,7 +1130,9 @@ public class Settings {
   }
 
   private RomHandler getRomHandler() {
-    return romHandlerFactory.create();
+    // NB: We don't need to use RandomSource because the Settings does not
+    // call randomized functions.
+    return romHandlerFactory.create(new Random());
   }
 
   private static void writePokemonIndex(ByteArrayOutputStream out, Pokemon pokemon) {
