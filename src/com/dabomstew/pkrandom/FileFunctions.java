@@ -82,6 +82,13 @@ public class FileFunctions {
     return buf.getInt();
   }
 
+  public static byte[] getConfigAsBytes(String filename) throws IOException {
+    InputStream in = openConfig(filename);
+    byte[] bytes = new byte[in.available()];
+    in.read(bytes);
+    return bytes;
+  }
+
   public static int getFileChecksum(String filename) {
     try {
       return getFileChecksum(openConfig(filename));

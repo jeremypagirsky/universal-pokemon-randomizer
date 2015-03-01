@@ -33,7 +33,7 @@ public class InvalidSupplementFilesException extends Exception {
 	 */
 	private static final long serialVersionUID = -3778498838677886358L;
 
-  enum Type {
+  public enum Type {
     UNKNOWN,
     TOO_SHORT,
     TRAINER_CLASSES,

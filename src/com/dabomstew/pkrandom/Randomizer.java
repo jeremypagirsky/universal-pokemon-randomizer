@@ -41,30 +41,24 @@ public class Randomizer {
   }
 
   public int randomize(final String filename) {
-    return randomize(filename, new OutputStream(){
+    return randomize(filename, new PrintStream(new OutputStream(){
       @Override
       public void write(int b) {}
-    });
+    }));
   }
 
-  public int randomize(final String filename, final OutputStream logStream) {
+  public int randomize(final String filename, final PrintStream log) {
     long seed = RandomSource.pickSeed();
-    return randomize(filename, logStream, seed);
+    return randomize(filename, log, seed);
   }
 
-  public int randomize(final String filename, final OutputStream logStream, long seed) {
+  public int randomize(final String filename, final PrintStream log, long seed) {
     final long startTime = System.currentTimeMillis();
     RandomSource.seed(seed);
     final RomHandler romHandler = settings.getRomHandlerFactory().create(RandomSource.instance());
     final boolean raceMode = settings.isRaceMode();
 
     int checkValue = 0;
-    PrintStream log;
-    try {
-      log = new PrintStream(logStream, false, "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      log = new PrintStream(logStream);
-    }
 
     // limit pokemon?
     if (settings.isLimitPokemon()) {

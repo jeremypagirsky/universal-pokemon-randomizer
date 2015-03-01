@@ -4,7 +4,6 @@ import static com.dabomstew.pkrandom.Settings.ROM_HANDLER_FACTORIES;
 
 import com.dabomstew.pkrandom.romhandlers.RomHandler;
 
-import javax.swing.JOptionPane;
 import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,7 +11,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.IllegalFormatException;
 import java.util.Random;
 import java.util.zip.CRC32;
 
@@ -103,7 +101,7 @@ public class Utils {
       throw new IllegalArgumentException("Checksum failure.");
     }
 
-    // Check the trainerclass & trainernames crc
+    // Check the trainerclass & trainernames & nicknames crc
     if (trainerClasses == null
         && !FileFunctions.checkOtherCRC(data, 0, 6, "trainerclasses.txt",
         data.length - 12)) {
@@ -132,7 +130,7 @@ public class Utils {
 
 
   public static class InvalidROMException extends Exception {
-    enum Type {
+    public enum Type {
       LENGTH,
       ZIP_FILE,
       RAR_FILE,
@@ -141,7 +139,6 @@ public class Utils {
     }
 
     private final Type type;
-
 
     public InvalidROMException(Type type, String message) {
       super(message);

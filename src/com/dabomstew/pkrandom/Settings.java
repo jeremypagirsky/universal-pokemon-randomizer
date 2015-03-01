@@ -71,7 +71,7 @@ public class Settings {
   private boolean allowBrokenMoves = true;
   private boolean limitPokemon;
 
-  enum BaseStatisticsMod {
+  public enum BaseStatisticsMod {
     UNCHANGED,
     SHUFFLE,
     RANDOM_FOLLOW_EVOLUTIONS,
@@ -80,14 +80,14 @@ public class Settings {
   private BaseStatisticsMod baseStatisticsMod = BaseStatisticsMod.UNCHANGED;
   private boolean standardizeEXPCurves;
 
-  enum AbilitiesMod {
+  public enum AbilitiesMod {
     UNCHANGED,
     RANDOMIZE
   }
   private AbilitiesMod abilitiesMod = AbilitiesMod.UNCHANGED;
   private boolean allowWonderGuard = true;
 
-  enum StartersMod {
+  public enum StartersMod {
     UNCHANGED,
     CUSTOM,
     COMPLETELY_RANDOM,
@@ -97,14 +97,14 @@ public class Settings {
   private Pokemon[] customStarters = new Pokemon[3];
   private boolean randomizeStartersHeldItems;
 
-  enum TypesMod {
+  public enum TypesMod {
     UNCHANGED,
     RANDOM_FOLLOW_EVOLUTIONS,
     COMPLETELY_RANDOM
   }
   private TypesMod typesMod = TypesMod.UNCHANGED;
 
-  enum MovesetsMod {
+  public enum MovesetsMod {
     UNCHANGED,
     RANDOM_PREFER_SAME_TYPE,
     COMPLETELY_RANDOM,
@@ -113,7 +113,7 @@ public class Settings {
   private MovesetsMod movesetsMod = MovesetsMod.UNCHANGED;
   private boolean startWithFourMoves;
 
-  enum TrainersMod {
+  public enum TrainersMod {
     UNCHANGED,
     RANDOM,
     TYPE_THEMED
@@ -127,13 +127,13 @@ public class Settings {
   private boolean randomizeTrainerNames;
   private boolean randomizeTrainerClassNames;
 
-  enum WildPokemonMod {
+  public enum WildPokemonMod {
     UNCHANGED,
     RANDOM,
     AREA_MAPPING,
     GLOBAL_MAPPING
   }
-  enum WildPokemonRestrictionMod {
+  public enum WildPokemonRestrictionMod {
     NONE,
     SIMILAR_STRENGTH,
     CATCH_EM_ALL,
@@ -146,14 +146,14 @@ public class Settings {
   private boolean useMinimumCatchRate;
   private boolean randomizeWildPokemonHeldItems;
 
-  enum StaticPokemonMod {
+  public enum StaticPokemonMod {
     UNCHANGED,
     RANDOM_MATCHING,
     COMPLETELY_RANDOM
   }
   private StaticPokemonMod staticPokemonMod = StaticPokemonMod.UNCHANGED;
 
-  enum TMsMod {
+  public enum TMsMod {
     UNCHANGED,
     RANDOM
   }
@@ -161,7 +161,7 @@ public class Settings {
   private boolean tmLevelUpMoveSanity;
   private boolean keepFieldMoves;
 
-  enum TMsHMsCompatibilityMod {
+  public enum TMsHMsCompatibilityMod {
     UNCHANGED,
     RANDOM_PREFER_TYPE,
     COMPLETELY_RANDOM,
@@ -169,7 +169,7 @@ public class Settings {
   }
   private TMsHMsCompatibilityMod tmsHmsCompatibilityMod = TMsHMsCompatibilityMod.UNCHANGED;
 
-  enum MoveTutorMovesMod {
+  public enum MoveTutorMovesMod {
     UNCHANGED,
     RANDOM
   }
@@ -177,7 +177,7 @@ public class Settings {
   private boolean tutorLevelUpMoveSanity;
   private boolean keepFieldMoveTutors;
 
-  enum MoveTutorsCompatibilityMod {
+  public enum MoveTutorsCompatibilityMod {
     UNCHANGED,
     RANDOM_PREFER_TYPE,
     COMPLETELY_RANDOM,
@@ -185,7 +185,7 @@ public class Settings {
   }
   private MoveTutorsCompatibilityMod moveTutorsCompatibilityMod = MoveTutorsCompatibilityMod.UNCHANGED;
 
-  enum InGameTradesMod {
+  public enum InGameTradesMod {
     UNCHANGED,
     RANDOMIZE_GIVEN,
     RANDOMIZE_GIVEN_AND_REQUESTED
@@ -196,7 +196,7 @@ public class Settings {
   private boolean randomizeInGameTradesIVs;
   private boolean randomizeInGameTradesItems;
 
-  enum FieldItemsMod {
+  public enum FieldItemsMod {
     UNCHANGED,
     SHUFFLE,
     RANDOM
@@ -410,27 +410,27 @@ public class Settings {
   }
 
   public static Settings fromString(String str) throws UnsupportedEncodingException {
-    // Need to add enables
     byte[] data = DatatypeConverter.parseBase64Binary(str);
-
-    // Check the checksum
-    ByteBuffer buf = ByteBuffer.allocate(4).put(data, data.length - 16, 4);
-    buf.rewind();
-    int crc = buf.getInt();
-
-    CRC32 checksum = new CRC32();
-    checksum.update(data, 0, data.length - 16);
-
-    if ((int) checksum.getValue() != crc) {
-      throw new IllegalArgumentException("Malformed input string");
-    }
+    checkChecksum(data);
 
     // Read the ROM handler name in order to restore the handler
-    Settings settings = new Settings();
     int romNameLength = FileFunctions.readFullInt(data, 25);
     // int romNameLength = data[28] & 0xFF;
     String romName = new String(data, 29, romNameLength, "US-ASCII");
-    settings.setRomHandlerFactory(ROM_HANDLER_FACTORIES.get(romName));
+
+    return fromStringWithRomHandlerFactory(str, ROM_HANDLER_FACTORIES.get(romName));
+  }
+
+  @Deprecated
+  public static Settings fromStringWithRomHandlerFactory(
+      String str, RomHandler.Factory romHandlerFactory) {
+
+    byte[] data = DatatypeConverter.parseBase64Binary(str);
+
+    checkChecksum(data);
+
+    Settings settings = new Settings();
+    settings.setRomHandlerFactory(romHandlerFactory);
 
     // Restore the actual controls
     settings.setLowerCasePokemonNames(restoreState(data[0], 0));
@@ -505,8 +505,8 @@ public class Settings {
     settings.setStartWithFourMoves(restoreState(data[11], 4));
 
     // changed 160
-    settings.setMovesetsMod(
-        restoreEnum(MovesetsMod.class, data[12],
+    settings.setTrainersMod(
+        restoreEnum(TrainersMod.class, data[12],
             5, // UNCHANGED
             1, // RANDOM
             3  // TYPE_THEMED
@@ -612,6 +612,17 @@ public class Settings {
     settings.setCurrentCodeTweaks(codeTweaks);
 
     return settings;
+  }
+
+  // TODO(kjs): GUI needs to be refactored not need this
+  @Deprecated
+  public static Settings fromStringWithRomHandler(String str, RomHandler romHandler) {
+    return fromStringWithRomHandlerFactory(str, new RomHandler.Factory() {
+      @Override
+      public RomHandler create(Random ignored) {
+        return romHandler;
+      }
+    });
   }
 
   //TODO(kjs): reorganize methods so setters follow getters
@@ -939,6 +950,10 @@ public class Settings {
     return this;
   }
 
+  public Settings setBaseStatisticsMod(boolean... bools) {
+    return setBaseStatisticsMod(getEnum(BaseStatisticsMod.class, bools));
+  }
+
   public Settings setStandardizeEXPCurves(final boolean standardizeEXPCurves) {
     this.standardizeEXPCurves = standardizeEXPCurves;
     return this;
@@ -949,6 +964,10 @@ public class Settings {
     return this;
   }
 
+  public Settings setAbilitiesMod(boolean... bools) {
+    return setAbilitiesMod(getEnum(AbilitiesMod.class, bools));
+  }
+
   public Settings setAllowWonderGuard(final boolean allowWonderGuard) {
     this.allowWonderGuard = allowWonderGuard;
     return this;
@@ -957,6 +976,10 @@ public class Settings {
   public Settings setStartersMod(final StartersMod startersMod) {
     this.startersMod = startersMod;
     return this;
+  }
+
+  public Settings setStartersMod(boolean... bools) {
+    return setStartersMod(getEnum(StartersMod.class, bools));
   }
 
   public Settings setCustomStarters(final Pokemon[] customStarters) {
@@ -974,9 +997,17 @@ public class Settings {
     return this;
   }
 
+  public Settings setTypesMod(boolean... bools) {
+    return setTypesMod(getEnum(TypesMod.class, bools));
+  }
+
   public Settings setMovesetsMod(final MovesetsMod movesetsMod) {
     this.movesetsMod = movesetsMod;
     return this;
+  }
+
+  public Settings setMovesetsMod(boolean... bools) {
+    return setMovesetsMod(getEnum(MovesetsMod.class, bools));
   }
 
   public Settings setStartWithFourMoves(final boolean startWithFourMoves) {
@@ -987,6 +1018,10 @@ public class Settings {
   public Settings setTrainersMod(final TrainersMod trainersMod) {
     this.trainersMod = trainersMod;
     return this;
+  }
+
+  public Settings setTrainersMod(boolean... bools) {
+    return setTrainersMod(getEnum(TrainersMod.class, bools));
   }
 
   public Settings setRivalCarriesStarterThroughout(final boolean rivalCarriesStarterThroughout) {
@@ -1029,9 +1064,17 @@ public class Settings {
     return this;
   }
 
+  public Settings setWildPokemonMod(boolean... bools) {
+    return setWildPokemonMod(getEnum(WildPokemonMod.class, bools));
+  }
+
   public Settings setWildPokemonRestrictionMod(final WildPokemonRestrictionMod wildPokemonRestrictionMod) {
     this.wildPokemonRestrictionMod = wildPokemonRestrictionMod;
     return this;
+  }
+
+  public Settings setWildPokemonRestrictionMod(boolean... bools) {
+    return setWildPokemonRestrictionMod(getEnum(WildPokemonRestrictionMod.class, bools));
   }
 
   public Settings setUseTimeBasedEncounters(final boolean useTimeBasedEncounters) {
@@ -1059,9 +1102,17 @@ public class Settings {
     return this;
   }
 
+  public Settings setStaticPokemonMod(boolean... bools) {
+    return setStaticPokemonMod(getEnum(StaticPokemonMod.class, bools));
+  }
+
   public Settings setTmsMod(final TMsMod tmsMod) {
     this.tmsMod = tmsMod;
     return this;
+  }
+
+  public Settings setTmsMod(boolean... bools) {
+    return setTmsMod(getEnum(TMsMod.class, bools));
   }
 
   public Settings setTmLevelUpMoveSanity(final boolean tmLevelUpMoveSanity) {
@@ -1079,9 +1130,17 @@ public class Settings {
     return this;
   }
 
+  public Settings setTmsHmsCompatibilityMod(boolean... bools) {
+    return setTmsHmsCompatibilityMod(getEnum(TMsHMsCompatibilityMod.class, bools));
+  }
+
   public Settings setMoveTutorMovesMod(final MoveTutorMovesMod moveTutorMovesMod) {
     this.moveTutorMovesMod = moveTutorMovesMod;
     return this;
+  }
+
+  public Settings setMoveTutorMovesMod(boolean... bools) {
+    return setMoveTutorMovesMod(getEnum(MoveTutorMovesMod.class, bools));
   }
 
   public Settings setTutorLevelUpMoveSanity(final boolean tutorLevelUpMoveSanity) {
@@ -1099,9 +1158,17 @@ public class Settings {
     return this;
   }
 
+  public Settings setMoveTutorsCompatibilityMod(boolean... bools) {
+    return setMoveTutorsCompatibilityMod(getEnum(MoveTutorsCompatibilityMod.class, bools));
+  }
+
   public Settings setInGameTradesMod(final InGameTradesMod inGameTradesMod) {
     this.inGameTradesMod = inGameTradesMod;
     return this;
+  }
+
+  public Settings setInGameTradesMod(boolean... bools) {
+    return setInGameTradesMod(getEnum(InGameTradesMod.class, bools));
   }
 
   public Settings setRandomizeInGameTradesNicknames(final boolean randomizeInGameTradesNicknames) {
@@ -1127,6 +1194,10 @@ public class Settings {
   public Settings setFieldItemsMod(final FieldItemsMod fieldItemsMod) {
     this.fieldItemsMod = fieldItemsMod;
     return this;
+  }
+
+  public Settings setFieldItemsMod(boolean... bools) {
+    return setFieldItemsMod(getEnum(FieldItemsMod.class, bools));
   }
 
   private RomHandler getRomHandler() {
@@ -1210,6 +1281,21 @@ public class Settings {
       }
     }
     return index;
+  }
+
+
+  private static void checkChecksum(byte[] data) {
+    // Check the checksum
+    ByteBuffer buf = ByteBuffer.allocate(4).put(data, data.length - 16, 4);
+    buf.rewind();
+    int crc = buf.getInt();
+
+    CRC32 checksum = new CRC32();
+    checksum.update(data, 0, data.length - 16);
+
+    if ((int) checksum.getValue() != crc) {
+      throw new IllegalArgumentException("Malformed input string");
+    }
   }
 
   /**
