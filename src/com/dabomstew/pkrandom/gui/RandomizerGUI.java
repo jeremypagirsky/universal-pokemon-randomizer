@@ -1291,7 +1291,9 @@ public class RandomizerGUI extends javax.swing.JFrame {
 
 
     this.currentRestrictions = settings.getCurrentRestrictions();
-    this.currentRestrictions.limitToGen(this.romHandler.generationOfPokemon());
+    if (this.currentRestrictions != null) {
+      this.currentRestrictions.limitToGen(this.romHandler.generationOfPokemon());
+    }
     this.currentCodeTweaks = settings.getCurrentCodeTweaks();
     updateCodeTweaksButtonText();
   }
@@ -1347,6 +1349,7 @@ public class RandomizerGUI extends javax.swing.JFrame {
         pokemonFromComboBox(spCustomPoke2Chooser),
         pokemonFromComboBox(spCustomPoke3Chooser)
     };
+    settings.setCustomStarters(customStarters);
 
     settings.setMovesetsMod(
         pmsUnchangedRB.isSelected(),

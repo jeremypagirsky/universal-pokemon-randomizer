@@ -50,7 +50,7 @@ public class Utils {
   }
 
   public static RomHandler.Factory detectRomHandlerFactory(String filename) {
-    for (RomHandler.Factory f : ROM_HANDLER_FACTORIES.values()) {
+    for (RomHandler.Factory f : ROM_HANDLER_FACTORIES) {
       // NB: check handlers are only used for detection and thus don't need
       // to be initialized with a RandomSource backed Random
       RomHandler checkHandler =  f.create(new Random());

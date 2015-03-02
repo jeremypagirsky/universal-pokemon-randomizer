@@ -16,10 +16,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.zip.CRC32;
 
@@ -28,26 +25,16 @@ public class Settings {
 
   public static final int VERSION = 163;
 
-  public static final Map<String, RomHandler.Factory> ROM_HANDLER_FACTORIES;
+  public static final RomHandler.Factory[] ROM_HANDLER_FACTORIES;
   static {
-    Map<String, RomHandler.Factory> map = new HashMap<>();
-
     RomHandler.Factory gen1 = new Gen1RomHandler.Factory();
     RomHandler.Factory gen2 = new Gen2RomHandler.Factory();
     RomHandler.Factory gen3 = new Gen3RomHandler.Factory();
     RomHandler.Factory gen4 = new Gen4RomHandler.Factory();
     RomHandler.Factory gen5 = new Gen5RomHandler.Factory();
-    // NB: We don't need to use RandomSource because calling
-    // getROMName() is not randomized.
-    Random r = new Random();
 
-    map.put(gen1.create(r).getROMName(), gen1);
-    map.put(gen2.create(r).getROMName(), gen2);
-    map.put(gen3.create(r).getROMName(), gen3);
-    map.put(gen4.create(r).getROMName(), gen4);
-    map.put(gen5.create(r).getROMName(), gen5);
-
-    ROM_HANDLER_FACTORIES = Collections.unmodifiableMap(map);
+    RomHandler.Factory[] factories = { gen1, gen2, gen3, gen4, gen5 };
+    ROM_HANDLER_FACTORIES = factories;
   }
 
   private byte[] trainerClasses;
@@ -210,7 +197,7 @@ public class Settings {
     out.write(settings);
   }
 
-  public static Settings read(FileInputStream in)
+  public static Settings read(String romFilename, FileInputStream in)
       throws IOException, UnsupportedOperationException {
     int version = in.read();
     if (version > VERSION) {
@@ -225,7 +212,7 @@ public class Settings {
       // TODO(kjs): display warning somehow...
       settings = new LegacyParser().update(version, settings);
     }
-    return fromString(settings);
+    return fromString(romFilename, settings);
   }
 
   @Override
@@ -409,7 +396,7 @@ public class Settings {
     return DatatypeConverter.printBase64Binary(out.toByteArray());
   }
 
-  public static Settings fromString(String str) throws UnsupportedEncodingException {
+  public static Settings fromString(String romFilename, String str) throws UnsupportedEncodingException {
     byte[] data = DatatypeConverter.parseBase64Binary(str);
     checkChecksum(data);
 
@@ -417,8 +404,13 @@ public class Settings {
     int romNameLength = FileFunctions.readFullInt(data, 25);
     // int romNameLength = data[28] & 0xFF;
     String romName = new String(data, 29, romNameLength, "US-ASCII");
+    RomHandler.Factory f = Utils.detectRomHandlerFactory(romFilename);
 
-    return fromStringWithRomHandlerFactory(str, ROM_HANDLER_FACTORIES.get(romName));
+    if (!romName.equals(f.create(new Random()).getROMName())) {
+      throw new IllegalArgumentException("ROM name does not match preset ROM name.");
+    }
+
+    return fromStringWithRomHandlerFactory(str, f);
   }
 
   @Deprecated
@@ -1252,8 +1244,10 @@ public class Settings {
 
   public static <E extends Enum<E>> E restoreEnum(Class<E> clazz, byte b, int... indices) {
     boolean[] bools = new boolean[indices.length];
-    for (int i : indices) {
-      bools[i] = restoreState(b, i);
+    int i = 0;
+    for (int idx : indices) {
+      bools[i] = restoreState(b, idx);
+      i++;
     }
     return getEnum(clazz, bools);
   }
@@ -1265,7 +1259,7 @@ public class Settings {
       return ((E[]) clazz.getMethod("values").invoke(null))[index];
     } catch (Exception e) {
       throw new IllegalArgumentException(
-          String.format("Unable to parse enum of type %s", clazz.getSimpleName()));
+          String.format("Unable to parse enum of type %s", clazz.getSimpleName()), e);
     }
   }
 
@@ -1280,7 +1274,8 @@ public class Settings {
         index = i;
       }
     }
-    return index;
+    // We have to return something, so return the default
+    return index >= 0 ? index : 0;
   }
 
 
